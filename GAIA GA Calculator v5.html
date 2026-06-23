@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GAIA GA Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 680px;
+      width: 100%;
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #1a4d8c 0%, #0f3a6b 100%);
+      padding: 20px 24px;
+      color: white;
+    }
+
+    h1 {
+      margin: 0;
+      font-weight: 750;
+      font-size: 1.85rem;
+      letter-spacing: -0.3px;
+    }
+
+    .form-body {
+      padding: 24px 28px 32px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.88rem;
+      margin-top: 18px;
+      display: block;
+      color: #1e2f41;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 11px 14px;
+      margin-top: 6px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 1rem;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #2c7be5;
+      box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.2);
+    }
+
+    button {
+      width: 100%;
+      margin-top: 32px;
+      padding: 14px;
+      background: #1f6e43;
+      color: white;
+      border: none;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: #0f5a38;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .output {
+      margin-top: 28px;
+      background: #f8fafd;
+      border-radius: 20px;
+      padding: 22px;
+      border-left: 5px solid #2c7be5;
+      font-size: 0.96rem;
+      line-height: 1.75;
+    }
+
+    hr {
+      margin: 16px 0;
+      border: 0;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      padding: 16px;
+      font-style: italic;
+      background: #f1f5f9;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* THIS FIXES THE DELIVERY SECTION HIDING */
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card-header">
+    <h1>GAIA GA Calculator</h1>
+  </div>
+
+  <div class="form-body">
+
+    <label>Assessment Type</label>
+    <select id="mode">
+      <option value="">-- Select Assessment Type --</option>
+      <option value="screening">Screening / Enrolment</option>
+      <option value="delivery">Delivery</option>
+    </select>
+
+    <label>📅 Enrolment / Screening Date</label>
+    <input type="date" id="enrolmentDate">
+
+    <!-- DELIVERY SECTION -->
+    <div id="deliverySection" class="hidden">
+      <label>📅 Delivery Date</label>
+      <input type="date" id="deliveryDate">
+    </div>
+
+    <label>📅 Date of Ultrasound</label>
+    <input type="date" id="ultrasoundDate">
+
+    <label>📏 Ultrasound GA — Weeks</label>
+    <input type="number" id="usWeeks" min="0" placeholder="e.g. 22">
+
+    <label>📏 Ultrasound GA — Days</label>
+    <input type="number" id="usDays" min="0" max="6" placeholder="e.g. 3">
+
+    <label>🩸 Last Menstrual Period (LMP)</label>
+    <input type="date" id="lmpDate">
+
+    <label>✅ LMP Certainty</label>
+    <select id="lmpCertainty">
+      <option value="">-- Select Certainty --</option>
+      <option value="certain">Certain</option>
+      <option value="uncertain">Uncertain</option>
+    </select>
+
+    <button onclick="runCalculation()">
+      ✨ Calculate GAIA Parameters
+    </button>
+
+    <div class="output" id="outputArea">
+      <em>Please select Assessment Type and fill the form to calculate</em>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    GAIA Gestational Age Calculator
+  </div>
+
+</div>
+
+<script>
+
+  function parseDate(dateStr) {
+    if (!dateStr) return null;
+
+    const d = new Date(dateStr);
+
+    if (isNaN(d.getTime())) return null;
+
+    d.setHours(0,0,0,0);
+
+    return d;
+  }
+
+  function formatDate(d) {
+
+    if (!d) return "Invalid";
+
+    const months = [
+      "Jan","Feb","Mar","Apr","May","Jun",
+      "Jul","Aug","Sep","Oct","Nov","Dec"
+    ];
+
+    return `${String(d.getDate()).padStart(2,'0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+  }
+
+  /* TOGGLE DELIVERY SECTION */
+  function toggleDeliverySection() {
+
+    const mode = document.getElementById('mode').value;
+
+    const deliverySection = document.getElementById('deliverySection');
+
+    if (mode === 'delivery') {
+      deliverySection.classList.remove('hidden');
+    } else {
+      deliverySection.classList.add('hidden');
+    }
+  }
+
+  document.getElementById('mode')
+    .addEventListener('change', toggleDeliverySection);
+
+  window.addEventListener('load', toggleDeliverySection);
+
+  function runCalculation() {
+
+    const mode = document.getElementById('mode').value;
+
+    if (!mode) {
+      alert("Please select Assessment Type");
+      return;
+    }
+
+    const enrolmentRaw = document.getElementById('enrolmentDate').value;
+    const deliveryRaw = document.getElementById('deliveryDate').value;
+    const ultrasoundRaw = document.getElementById('ultrasoundDate').value;
+
+    const usWeeks = parseInt(document.getElementById('usWeeks').value);
+    const usDays = parseInt(document.getElementById('usDays').value);
+
+    const lmpRaw = document.getElementById('lmpDate').value;
+    const lmpCertainty = document.getElementById('lmpCertainty').value;
+
+    if (isNaN(usWeeks) || isNaN(usDays)) {
+      alert("Please enter valid Ultrasound GA values.");
+      return;
+    }
+
+    const usDate = parseDate(ultrasoundRaw);
+    const enrolmentDate = parseDate(enrolmentRaw);
+
+    const deliveryDate =
+      (mode === 'delivery')
+        ? parseDate(deliveryRaw)
+        : null;
+
+    const lmpDate =
+      lmpRaw
+        ? parseDate(lmpRaw)
+        : null;
+
+    if (!usDate) {
+      alert("Invalid Ultrasound Date");
+      return;
+    }
+
+    const offset = 0;
+
+    const usGA_days = usWeeks * 7 + usDays;
+
+    const trimester =
+      usGA_days <= 97
+        ? "First"
+        : (usGA_days <= 195
+            ? "Second"
+            : "Third or beyond");
+
+    const pregnancyStartByUS = new Date(
+      usDate.getTime() - (usGA_days - offset) * 86400000
+    );
+
+    let finalPregnancyStartDate = pregnancyStartByUS;
+
+    let source = "Ultrasound";
+
+    let LOC = "";
+
+    let absDiff = null;
+
+    let formattedLMP = "Not Provided";
+
+    if (lmpDate) {
+
+      formattedLMP = formatDate(lmpDate);
+
+      const diff_us_lmp = Math.round(
+        (pregnancyStartByUS - lmpDate) / 86400000
+      );
+
+      absDiff = Math.abs(diff_us_lmp);
+
+      if (trimester === "First") {
+
+        LOC = "LOC-1";
+
+        if (absDiff <= 7 && lmpCertainty === "certain") {
+          finalPregnancyStartDate = lmpDate;
+          source = "LMP";
+        }
+
+      } else if (trimester === "Second") {
+
+        if (lmpCertainty === "certain") {
+
+          LOC = "LOC-2a";
+
+          finalPregnancyStartDate =
+            (absDiff <= 14)
+              ? lmpDate
+              : pregnancyStartByUS;
+
+          source =
+            (absDiff <= 14)
+              ? "LMP"
+              : "Ultrasound";
+
+        } else {
+
+          LOC = "LOC-2b";
+
+          finalPregnancyStartDate =
+            (absDiff <= 10)
+              ? lmpDate
+              : pregnancyStartByUS;
+
+          source =
+            (absDiff <= 10)
+              ? "LMP"
+              : "Ultrasound";
+        }
+
+      } else {
+
+        LOC = "NOT LOC 1-2b";
+
+        finalPregnancyStartDate = pregnancyStartByUS;
+
+        source = "Ultrasound";
+      }
+
+    } else {
+
+      LOC =
+        (trimester === "First")
+          ? "LOC-1"
+          : (trimester === "Second"
+              ? "LOC-2b"
+              : "NOT LOC 1-2b");
+    }
+
+    let gaEnrolment = null;
+
+    if (enrolmentDate) {
+
+      gaEnrolment = Math.round(
+        (enrolmentDate - finalPregnancyStartDate) / 86400000 + offset
+      );
+    }
+
+    let gaBirth = null;
+
+    if (mode === 'delivery' && deliveryDate) {
+
+      gaBirth = Math.round(
+        (deliveryDate - finalPregnancyStartDate) / 86400000 + offset
+      );
+    }
+
+    const EDD = new Date(finalPregnancyStartDate);
+
+    EDD.setDate(
+      finalPregnancyStartDate.getDate() + 280 - offset
+    );
+
+    let decisionText = "";
+
+    let decisionColor = "#1f8a4c";
+
+    if (mode === "screening") {
+
+      if (LOC === "NOT LOC 1-2b") {
+
+        decisionText =
+          "SCREEN BUT DO NOT ENROL THIS PARTICIPANT.";
+
+        decisionColor = "#b91c1c";
+
+      } else if (gaEnrolment < 98) {
+
+        decisionText =
+          "REFER FOR SCREENING ON A LATER DATE";
+
+        decisionColor = "#e67e22";
+
+      } else if (gaEnrolment <= 252) {
+
+        decisionText =
+          "PROCEED WITH SCREENING / ENROLMENT";
+
+        decisionColor = "#1f8a4c";
+
+      } else {
+
+        decisionText =
+          "SCREEN BUT DO NOT ENROL THIS PARTICIPANT.";
+
+        decisionColor = "#b91c1c";
+      }
+
+    } else {
+
+      if (gaBirth >= 259) {
+
+        decisionText = "TERM";
+
+      } else if (gaBirth < 196) {
+
+        decisionText =
+          "EXTREMELY PRETERM, COMPLETE SAE";
+
+        decisionColor = "#b91c1c";
+
+      } else if (gaBirth < 224) {
+
+        decisionText =
+          "VERY PRETERM, COMPLETE SAE";
+
+        decisionColor = "#e67e22";
+
+      } else {
+
+        decisionText =
+          "MODERATE TO LATE PRETERM, COMPLETE SAE";
+
+        decisionColor = "#cc8400";
+      }
+    }
+
+    let html = `
+      <strong>Trimester:</strong> ${trimester}<br>
+
+      <strong>LMP Date:</strong> ${formattedLMP}<br>
+
+      <strong>Pregnancy Start Date by Ultrasound:</strong>
+      ${formatDate(pregnancyStartByUS)}<br>
+
+      <strong>Absolute Difference (US vs LMP):</strong>
+      ${absDiff !== null ? absDiff + ' days' : 'Not applicable'}<br><br>
+
+      <strong>GAIA Pregnancy Start Date:</strong>
+      ${formatDate(finalPregnancyStartDate)}<br>
+
+      <strong>Source Used:</strong> ${source}<br>
+
+      <strong>LOC:</strong>
+      <strong style="color:${LOC.includes('NOT') ? '#dc2626' : '#1f8a4c'}">
+        ${LOC}
+      </strong><br><br>
+    `;
+
+    if (mode === "screening") {
+
+      html += `
+        <strong>GAIA at Screening/Enrolment:</strong>
+        ${
+          gaEnrolment !== null
+            ? Math.floor(gaEnrolment/7) +
+              ' weeks and ' +
+              (gaEnrolment % 7) +
+              ' days'
+            : 'N/A'
+        }<br>
+
+        <strong>Estimated Due Date (EDD):</strong>
+        ${formatDate(EDD)}
+      `;
+
+    } else {
+
+      html += `
+        <strong>GAIA at Enrolment:</strong>
+        ${
+          gaEnrolment !== null
+            ? Math.floor(gaEnrolment/7) +
+              ' weeks and ' +
+              (gaEnrolment % 7) +
+              ' days'
+            : 'N/A'
+        }<br>
+
+        <strong>GAIA at Birth:</strong>
+        ${
+          gaBirth !== null
+            ? Math.floor(gaBirth/7) +
+              ' weeks and ' +
+              (gaBirth % 7) +
+              ' days'
+            : 'N/A'
+        }<br>
+
+        <strong>Estimated Due Date (EDD):</strong>
+        ${formatDate(EDD)}
+      `;
+    }
+
+    html += `
+      <hr>
+
+      <div style="
+        padding:12px 0;
+        font-weight:700;
+        color:${decisionColor};
+      ">
+        ${decisionText}
+      </div>
+    `;
+
+    document.getElementById('outputArea').innerHTML = html;
+  }
+
+  window.runCalculation = runCalculation;
+
+</script>
+
+</body>
+</html>
